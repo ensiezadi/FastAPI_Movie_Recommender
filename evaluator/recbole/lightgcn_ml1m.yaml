@@ -1,0 +1,20 @@
+data_path: /data/processed/recbole
+dataset: ml-1m
+USER_ID_FIELD: user_id
+ITEM_ID_FIELD: movie_id
+RATING_FIELD: rating
+TIME_FIELD: timestamp
+load_col:
+  inter: [user_id, movie_id, rating, timestamp]
+eval_args:
+  split: {'RS': [0.8, 0.1, 0.1]}
+  group_by: user
+  order: TO
+  mode: full
+metrics: ['Precision', 'Recall', 'NDCG', 'Hit']
+topk: [10]
+valid_metric: NDCG@10
+epochs: 50
+embedding_size: 64
+train_batch_size: 2048
+eval_batch_size: 4096

@@ -12,3 +12,18 @@ wheels/
 # Folder
 data_prep
 data_prep/prepared.py
+
+# OS files
+.DS_Store
+
+# Large local datasets and generated artifacts
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/parquet/*
+!data/parquet/.gitkeep
+models/*
+!models/.gitkeep
+evaluator/results/*
+!evaluator/results/.gitkeep

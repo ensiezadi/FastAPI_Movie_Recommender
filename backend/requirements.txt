@@ -1,0 +1,11 @@
+fastapi>=0.115.8
+uvicorn[standard]>=0.34.0
+sqlalchemy>=2.0.38
+psycopg2-binary>=2.9.10
+redis>=5.2.1
+pydantic>=2.10.6
+pandas>=2.2.3
+scipy>=1.15.1
+implicit>=0.7.2
+joblib>=1.4.2
+psutil>=6.1.1

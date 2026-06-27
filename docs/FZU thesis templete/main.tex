@@ -1,0 +1,94 @@
+%-------------------------------------------------------%
+%-          LaTeX Template                             -%
+%-          FZU Thesis                                 -%
+%-------------------------------------------------------%
+
+\documentclass[twoside,fontset=none]{ctexart}
+
+%--------------------预定义--------------------
+\input{Text/pre-defined}
+
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=black,
+    citecolor=black
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  frame=single,
+  breaklines=true,
+  columns=flexible,
+  showstringspaces=false
+}
+
+\newcommand{\ReportTitle}{信息安全理论与技术实验报告}
+\newcommand{\ExpTitle}{基于容器化微服务与电影相似度推荐的系统实现}
+\newcommand{\StudentName}{程浩}
+\newcommand{\StudentId}{241020055}
+\newcommand{\College}{计算机与大数据学院}
+\newcommand{\Major}{信息安全}
+\newcommand{\Grade}{2024级}
+\newcommand{\Teacher}{邹剑}
+
+%--------------------文章主体--------------------
+\begin{document}
+
+\raggedbottom
+
+%--------------------封面页--------------------
+\thispagestyle{empty}
+\begin{center}
+  \vspace*{2cm}
+  {\heitib \sanhao \ReportTitle}
+
+  \vspace{2.5cm}
+  {\heitib \sihao 实验一：\ExpTitle}
+
+  \vspace{3cm}
+  \renewcommand{\arraystretch}{1.8}
+  {\song \xiaosihao
+  \begin{tabular}{rl}
+    姓\hspace{2em}名： & \StudentName \\
+    学\hspace{2em}号： & \StudentId \\
+    学\hspace{2em}院： & \College \\
+    专\hspace{2em}业： & \Major \\
+    年\hspace{2em}级： & \Grade \\
+    指导教师： & \Teacher \\
+  \end{tabular}}
+\end{center}
+\newpage
+
+%--------------------目录页--------------------
+\input{Text/Abstract}
+\input{Text/Table of contents}
+
+%--------------------页眉页脚--------------------
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[CE]{\xiaowuhao 福州大学信息安全理论与技术实验报告}
+\fancyhead[CO]{\xiaowuhao 基于容器化微服务与电影相似度推荐的系统实现}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{0pt}
+
+%--------------------章节--------------------
+\input{Text/Chapter 1}
+\input{Text/Chapter 2}
+\input{Text/Chapter 3}
+\input{Text/Chapter 4}
+\input{Text/Chapter 5}
+\input{Text/Chapter 6}
+
+%--------------------参考文献--------------------
+\input{Text/Reference}
+
+\end{document}

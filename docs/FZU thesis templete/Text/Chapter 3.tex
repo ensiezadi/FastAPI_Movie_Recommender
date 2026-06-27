@@ -1,0 +1,105 @@
+\section{总体设计}
+
+\subsection{系统总体架构}
+
+系统采用前后端分离和容器化部署方式，在线服务链路如下：
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=0.9cm,
+  archbox/.style={
+    rectangle,
+    rounded corners=2pt,
+    draw=black,
+    align=center,
+    minimum width=4.5cm,
+    minimum height=0.85cm,
+    font=\song\xiaowuhao
+  },
+  arrow/.style={-{Stealth[length=2.2mm]}, line width=0.5pt}
+]
+\node[archbox] (browser) {用户浏览器};
+\node[archbox, below=of browser] (frontend) {Streamlit 前端};
+\node[archbox, below=of frontend] (backend) {FastAPI 推荐服务};
+\node[archbox, below left=0.8cm and 0.5cm of backend] (redis) {Redis 推荐缓存};
+\node[archbox, below right=0.8cm and 0.5cm of backend] (postgres) {PostgreSQL 数据库};
+
+\draw[arrow] (browser) -- (frontend);
+\draw[arrow] (frontend) -- (backend);
+\draw[arrow] (backend) -- (redis);
+\draw[arrow] (backend) -- (postgres);
+\draw[arrow] (redis) -- (postgres);
+\end{tikzpicture}
+\caption{系统总体架构}
+\end{figure}
+
+其中，Streamlit 负责交互页面展示，FastAPI 负责提供 REST API，PostgreSQL 负责保存电影、用户、
+评分和点击事件数据，Redis 用于缓存推荐结果和降低重复计算开销。该架构将展示层、服务层、数据层和
+缓存层解耦，便于后续替换推荐算法或扩展部署规模。
+
+\subsection{系统模块划分}
+
+系统主要划分为以下模块：
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{模块} & \textbf{主要职责} \\
+\midrule
+backend  & FastAPI 接口、数据库模型、推荐逻辑和系统指标 \\
+frontend & Streamlit 页面、电影搜索、推荐结果展示和评估页面 \\
+trainer  & 后续 ALS/BPR 等离线模型训练脚本 \\
+evaluator & 抽样评估、RecBole 配置和实验结果记录 \\
+spark    & Spark 预处理与 Spark MLlib ALS 对照实验入口 \\
+docs     & 课程设计报告、实验记录和系统说明文档 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{数据集与数据库设计}
+
+当前系统已经导入 MovieLens 现代 CSV 数据集。数据导入流程首先读取 movies.csv 和 ratings.csv，
+将电影信息和评分行为写入 PostgreSQL；如果目录中存在 links.csv 和 tags.csv，系统也可以将外部编号
+映射和用户标签导入对应扩展表。导入完成后，推荐服务主要围绕电影表和评分表进行查询与相似度计算。
+
+数据库统计如下：
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+\textbf{表} & \textbf{数量} \\
+\midrule
+users   & 200{,}948 \\
+movies  & 87{,}618 \\
+ratings & 32{,}921{,}437 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+数据库核心表包括 users、movies、ratings、user\_events、recommendation\_cache 和
+experiment\_results。其中，movies 保存电影标题与类型，ratings 保存用户评分行为，
+user\_events 用于记录前端点击事件，recommendation\_cache 用于保存推荐缓存，
+experiment\_results 用于记录评估指标。
+
+各类数据在系统中的作用如下：
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{数据类型} & \textbf{系统作用} \\
+\midrule
+电影基础信息 & 支持电影搜索、标题展示、类型展示和新增电影演示 \\
+用户评分数据 & 支持电影相似度计算、协同过滤推荐和抽样离线评估 \\
+用户点击事件 & 记录 Demo 曝光与点击行为，用于计算本地 Demo CTR \\
+推荐缓存数据 & 缓存重复推荐请求结果，降低在线计算开销 \\
+实验结果数据 & 保存 Precision@K、Recall@K、NDCG@K 和延迟等指标 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+与 MovieLens 1M 相比，当前数据规模更大，能够更好体现数据库、缓存和服务化部署的必要性。
+但由于 MovieLens Latest 数据集会随时间更新，因此正式固定实验结果更适合使用 MovieLens 32M
+作为稳定 benchmark。
+
+\newpage

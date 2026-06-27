@@ -1,0 +1,123 @@
+\section{详细设计与系统实现}
+
+\subsection{电影相似推荐设计}
+
+当前系统主流程采用电影到电影的相似推荐方式。用户输入或选择一部电影后，系统基于评分行为计算
+候选电影与输入电影的相似度，并返回 Top-K 推荐结果。
+
+为保证在 3200 万级评分数据上仍能在线交互，当前实现采用抽样评分向量余弦相似度：
+
+\begin{verbatim}
+1. 获取输入电影的一部分评分用户；
+2. 获取这些用户评分过的其他电影；
+3. 在采样用户空间中构造电影评分向量；
+4. 计算候选电影与输入电影之间的余弦相似度；
+5. 返回 Top-K 相似电影。
+\end{verbatim}
+
+推荐解释示例：
+
+\begin{verbatim}
+rating cosine: 124 sampled shared users
+\end{verbatim}
+
+前端将其解释为``相似评分行为''，表示这些电影在共同评分用户上的评分模式较接近。该方法实现简单、
+解释清晰，适合作为课程设计阶段的基础推荐算法。
+
+\subsection{接口与缓存设计}
+
+后端主要提供以下接口：
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{接口} & \textbf{功能} \\
+\midrule
+\texttt{GET /movies/search} & 根据关键词搜索电影 \\
+\texttt{GET /recommend/movie} & 根据电影 ID 返回相似电影 \\
+\texttt{POST /clicks} & 记录推荐结果点击事件 \\
+\texttt{POST /movies} & 新增电影数据 \\
+\texttt{GET /health} & 返回服务健康状态 \\
+\texttt{GET /metrics/cache} & 返回缓存相关指标 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Redis 主要用于缓存相同输入电影和相同 Top-K 参数下的推荐结果。对于重复访问的热门电影，缓存能够减少
+数据库查询和相似度重复计算，从而降低接口响应时间。
+
+\subsection{点击率与冷启动设计}
+
+系统记录本地 Demo 中的推荐曝光和点击：
+
+\begin{verbatim}
+Demo CTR = clicks / recommendations_shown
+\end{verbatim}
+
+该指标只表示本地演示点击率，不代表真实线上用户点击率。因此报告中使用 ``Demo CTR'' 命名，避免与生产
+环境 CTR 混淆。
+
+用户还可以在侧边栏新增电影，例如输入``战狼''、类型为 \texttt{Action|Drama}、初始评分为 3.0。
+由于 MovieLens 原始数据中不存在《战狼》，该场景可解释为模拟新电影加入系统后的冷启动推荐。对于缺少
+评分历史的新电影，系统无法直接计算可靠的协同过滤相似度，因此只能使用类型、标题和初始评分作为辅助信息。
+
+\subsection{系统实现流程}
+
+系统实现流程包括数据导入、服务启动、前端交互和推荐评估四个环节：
+
+\begin{enumerate}[leftmargin=2em]
+  \item 将 MovieLens 数据集导入 PostgreSQL，生成 movies、users 和 ratings 等核心表。
+  \item 使用 Docker Compose 启动 PostgreSQL、Redis、FastAPI 后端和 Streamlit 前端。
+  \item 用户在前端搜索电影并选择 seed movie，后端根据评分行为计算相似电影。
+  \item 前端展示推荐电影、类型、相似度得分、推荐解释和 Demo CTR。
+  \item Evaluation 页面调用抽样评估接口，展示推荐指标和响应延迟。
+\end{enumerate}
+
+\subsection{功能测试方案}
+
+功能测试用于验证系统是否达到课程设计的基本功能要求：
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{功能} & \textbf{验收方式} \\
+\midrule
+电影搜索   & 输入 \texttt{Toy Story} 能检索到 \texttt{Toy Story (1995)} \\
+相似推荐   & \texttt{GET /recommend/movie?movie\_id=1\&limit=4} 返回 4 条推荐 \\
+推荐解释   & 每条推荐显示相似原因和 Score \\
+点击统计   & 点击推荐项后 Demo CTR 发生变化 \\
+新增电影   & 侧边栏新增电影后写入数据库 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{离线评估方案}
+
+系统提供轻量级 leave-one-out 抽样评估：
+
+\begin{verbatim}
+对每个抽样用户：
+1. 取一部高评分电影作为 seed movie；
+2. 取另一部高评分电影作为 target movie；
+3. 用 seed movie 生成 Top-K 推荐；
+4. 如果 target movie 出现在 Top-K 中，则记为命中。
+\end{verbatim}
+
+评估指标包括：
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{指标} & \textbf{含义} \\
+\midrule
+Precision@K & Top-K 推荐中命中目标的比例 \\
+Recall@K    & 目标电影是否被召回 \\
+NDCG@K      & 命中位置越靠前得分越高 \\
+HitRate@K   & 样本用户中至少命中一次的比例 \\
+Avg Latency & 平均推荐响应时间 \\
+p95 Latency & 95 分位响应时间 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\newpage

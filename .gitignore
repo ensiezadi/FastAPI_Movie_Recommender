@@ -16,6 +16,22 @@ data_prep/prepared.py
 # OS files
 .DS_Store
 
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.xdv
+missfont.log
+tmp/
+
 # Large local datasets and generated artifacts
 data/raw/*
 !data/raw/.gitkeep

@@ -1,0 +1,39 @@
+%---------------------摘要----------------------------
+\pagenumbering{Roman}
+\pagestyle{plain}
+
+\newpage
+\begin{center}
+{\heitib \sanhao 基于容器化微服务与电影相似度推荐的系统实现}
+
+\vspace{24pt}
+{\heitib \sihao 摘要}
+\end{center}
+
+\addcontentsline{toc}{section}{摘要}
+
+{\song \xiaosihao
+\setlength{\baselineskip}{20pt}
+
+随着互联网应用和数字娱乐平台的快速发展，用户面对的电影、短视频、音乐和商品等信息资源不断增长，
+信息过载问题日益明显。推荐系统能够根据用户历史行为和物品属性，从大量候选内容中筛选出更可能符合
+用户兴趣的结果，是现代 Web 应用和数据智能系统中的重要基础能力。本课程设计以电影推荐场景为对象，
+基于 MovieLens 数据集构建一个可运行、可交互、可部署和可初步评估的电影推荐系统原型。
+
+系统采用 FastAPI 提供后端接口，使用 Streamlit 实现前端交互页面，使用 PostgreSQL 保存电影、用户、
+评分、点击事件和实验结果等数据，使用 Redis 缓存推荐结果，并通过 Docker Compose 完成多服务统一编排。
+在推荐方法上，系统以电影到电影的相似推荐为主流程，基于用户评分行为构造采样评分向量并计算余弦相似度，
+返回 Top-K 相似电影及推荐解释。系统还提供电影检索、推荐点击统计、冷启动电影添加、健康检查、缓存指标
+和抽样离线评估等功能。
+
+实验部分以 MovieLens 32M 级别数据为主要数据基础，数据库中包含 200{,}948 个用户、87{,}618 部电影和
+32{,}921{,}437 条评分记录。测试结果表明，系统能够完成电影搜索、相似电影推荐、推荐解释和评估指标展示
+等核心流程；同时，抽样评估结果也反映出当前在线相似度计算在大规模数据下仍存在响应延迟偏高、热门电影
+偏置和个性化能力有限等问题。后续可通过离线预计算、ALS/BPR 模型训练、RecBole 评估和 Spark ALS 对照
+实验进一步完善系统。
+
+\vspace{12pt}
+\noindent{\heitib \xiaosihao 关键词：} 电影推荐；MovieLens；FastAPI；PostgreSQL；Redis；Docker Compose
+}
+
+\newpage

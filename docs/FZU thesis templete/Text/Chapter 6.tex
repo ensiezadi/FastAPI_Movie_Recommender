@@ -1,0 +1,59 @@
+\section{存在问题、改进方向与总结}
+
+\subsection{热门电影偏置}
+
+从 Demo 推荐结果看，Matrix、Shawshank Redemption、Star Wars 等热门电影容易出现在结果前列。
+这说明评分共现和采样相似度容易受到热门电影影响。后续可通过以下方式改进：
+
+\begin{enumerate}[leftmargin=2em]
+  \item 对高热电影进行流行度惩罚。
+  \item 使用调整余弦相似度或 Pearson 相似度。
+  \item 引入 BM25/TF-IDF 式的用户共现降权。
+  \item 使用 ALS/BPR 学习潜在向量，降低单纯共现带来的热门偏置。
+\end{enumerate}
+
+\subsection{响应延迟}
+
+当前相似度在线计算依赖 PostgreSQL 查询和 Python 聚合，在 32M 评分规模下 p95 延迟偏高。
+后续优化方向：
+
+\begin{enumerate}[leftmargin=2em]
+  \item 离线预计算 Top-N 相似电影表。
+  \item 将相似度结果写入 Redis 或 PostgreSQL 物化表。
+  \item 对 \texttt{ratings(movie\_id, user\_id)} 和 \texttt{ratings(user\_id, movie\_id)} 建立合适索引。
+  \item 使用 implicit 模型训练 item factors，在线只做向量近邻检索。
+\end{enumerate}
+
+\subsection{实验完整性}
+
+当前 Evaluation 页面已经形成基本评估闭环，但仍属于抽样评估。若要达到更完整的课程设计或论文实验标准，
+需要补充：
+
+\begin{enumerate}[leftmargin=2em]
+  \item Popular、Item-CF、ALS、BPR、Hybrid 的横向对比。
+  \item RecBole 离线评估结果。
+  \item Spark ALS 分布式训练对照。
+  \item 缓存命中前后接口响应时间对比。
+  \item Docker CPU/内存占用记录。
+\end{enumerate}
+
+\subsection{课程设计总结}
+
+本课程设计完成了一个基于 Docker Compose、FastAPI、Streamlit、PostgreSQL 和 Redis 的电影推荐系统
+原型。系统能够支持电影搜索、相似电影推荐、推荐解释、相似度得分、本地 Demo CTR 和抽样评估指标展示。
+
+与原始 FastAPI Movie Recommender Demo 相比，当前系统在以下方面进行了扩展：
+
+\begin{enumerate}[leftmargin=2em]
+  \item 数据库从 SQLite 扩展到 PostgreSQL。
+  \item 数据规模从 MovieLens 100K/1M 扩展到 32M 级别。
+  \item 增加 Redis 缓存和容器化多服务部署。
+  \item 增加 Evaluation 页面和抽样离线指标。
+  \item 增加冷启动电影添加入口和 Demo CTR 展示。
+\end{enumerate}
+
+从课程设计角度看，本系统不仅实现了推荐算法的基本流程，也完成了一个可交互、可部署、可评估的 Web
+应用闭环。后续工作可以继续围绕离线预计算、ALS/BPR 模型训练、RecBole 评估、Spark ALS 对照实验和
+Nginx 统一入口部署进行完善，使系统从课程设计原型进一步发展为更完整的推荐系统实验平台。
+
+\newpage

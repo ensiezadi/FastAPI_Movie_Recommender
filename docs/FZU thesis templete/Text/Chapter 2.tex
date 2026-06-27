@@ -1,0 +1,180 @@
+\section{需求分析}
+
+\subsection{需求概述}
+
+本课程设计面向电影推荐这一典型应用场景，目标是构建一个能够完成电影检索、相似电影推荐、结果展示和
+初步评估的推荐系统原型。系统的核心需求不是单独验证某个算法公式，而是围绕用户使用流程，将数据导入、
+推荐计算、接口服务、前端交互、缓存优化和评估分析连接起来，形成一个完整的课程设计系统。
+
+从用户角度看，系统应当能够帮助用户根据一部已知电影发现相似影片；从系统角度看，后端需要能够稳定地
+读取电影和评分数据，计算推荐结果，并将结果以接口形式提供给前端；从课程设计角度看，系统还需要能够
+展示推荐依据和实验指标，便于说明设计思路与实现效果。
+
+\subsection{用户角色与使用场景}
+
+本系统主要面向两类使用角色：
+
+\begin{enumerate}[leftmargin=2em]
+  \item 普通用户：通过前端页面搜索电影，选择感兴趣的电影，并查看系统返回的相似电影推荐结果。
+  \item 系统设计与评估人员：通过接口和 Evaluation 页面观察推荐效果、响应延迟、点击统计和系统运行状态。
+\end{enumerate}
+
+典型使用流程如下：
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=0.85cm and 0.75cm,
+  flowbox/.style={
+    rectangle,
+    rounded corners=2pt,
+    draw=black,
+    align=center,
+    minimum width=2.75cm,
+    minimum height=0.9cm,
+    font=\song\xiaowuhao
+  },
+  arrow/.style={-{Stealth[length=2.2mm]}, line width=0.5pt}
+]
+\node[flowbox] (open) {进入前端页面};
+\node[flowbox, right=of open] (search) {搜索电影};
+\node[flowbox, right=of search] (select) {选择目标电影};
+\node[flowbox, below=of select] (recommend) {查看相似\\电影推荐};
+\node[flowbox, left=of recommend] (click) {点击感兴趣\\推荐项};
+\node[flowbox, left=of click] (explain) {查看推荐解释\\与评估指标};
+
+\draw[arrow] (open) -- (search);
+\draw[arrow] (search) -- (select);
+\draw[arrow] (select) -- (recommend);
+\draw[arrow] (recommend) -- (click);
+\draw[arrow] (click) -- (explain);
+\end{tikzpicture}
+\caption{用户典型使用流程}
+\end{figure}
+
+该流程覆盖了电影推荐系统中从用户输入、后端计算到结果反馈的主要环节，也为后续改进推荐算法和缓存策略
+提供了基础。
+
+\subsection{功能需求}
+
+根据上述使用场景，系统需要满足以下功能需求：
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{功能模块} & \textbf{需求说明} \\
+\midrule
+电影检索 & 支持用户按照关键词搜索电影，并展示电影标题与类型信息 \\
+相似推荐 & 用户选择一部电影后，系统返回 Top-K 相似电影列表 \\
+推荐解释 & 每条推荐结果展示相似度得分和推荐原因 \\
+点击统计 & 记录本地 Demo 中推荐结果的曝光和点击，用于展示 Demo CTR \\
+电影新增 & 支持演示场景中新增电影，用于模拟冷启动问题 \\
+离线评估 & 提供 Precision@K、Recall@K、NDCG@K、HitRate@K 和延迟指标 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+其中，电影检索和相似推荐是系统的核心功能；推荐解释和点击统计用于提高系统的可观察性；电影新增功能
+用于展示推荐系统在冷启动场景下可能遇到的问题；离线评估功能则用于从指标角度分析当前推荐方法的效果。
+
+\subsection{数据需求}
+
+推荐系统依赖用户与电影之间的交互数据，因此数据需求是本系统的重要组成部分。系统需要至少包含电影信息、
+用户信息和评分信息三类基础数据。电影信息用于展示标题和类型，用户评分信息用于计算电影之间的相似度，
+点击事件和评估结果则用于记录系统运行过程中的反馈与实验数据。
+
+本系统选择 MovieLens 系列数据集作为实验数据来源。MovieLens 数据集由 GroupLens 项目长期维护，
+在推荐系统研究中使用较广，具有数据格式规范、评分行为明确、便于复现实验等特点。项目中支持
+MovieLens 1M、MovieLens 32M 和 MovieLens Latest Full 等不同规模的数据，其中 MovieLens 1M 适合
+开发调试，MovieLens 32M 更适合作为相对稳定的课程设计和实验主数据集，Latest Full 则适合用于体验
+较新的数据和进行系统压力测试。
+
+从课程设计角度看，不同规模的数据集承担的作用并不相同。小规模数据集便于快速验证导入脚本、数据库
+模型和推荐接口是否正确；中等及较大规模数据集能够更真实地暴露查询延迟、索引设计和缓存命中率等工程
+问题；持续更新的数据集则适合观察系统在数据增量变化时的可维护性。因此，本系统没有只使用一个最小
+样例数据集，而是按照开发、实验和扩展三类场景组织数据来源。
+
+\begin{center}
+\begin{tabular}{p{4.0cm}p{3.4cm}p{5.2cm}}
+\toprule
+\textbf{数据集版本} & \textbf{典型规模} & \textbf{在本项目中的作用} \\
+\midrule
+MovieLens 1M & 约 100 万条评分 & 用于本地快速调试导入流程、表结构和推荐接口，运行速度快，适合排查程序错误 \\
+MovieLens 32M & 约 3200 万条评分 & 作为主要实验数据集，用于支撑相似电影推荐、离线评估、缓存测试和接口性能观察 \\
+MovieLens Latest Full & 持续更新的完整数据 & 用于后续扩展和压力测试，可验证系统面对更大规模或更新数据时的适应能力 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+MovieLens 现代 CSV 格式主要包含以下文件：
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{文件} & \textbf{主要字段} & \textbf{用途} \\
+\midrule
+movies.csv  & movieId, title, genres & 保存电影标题和类型信息 \\
+ratings.csv & userId, movieId, rating, timestamp & 保存用户对电影的评分行为 \\
+links.csv   & movieId, imdbId, tmdbId & 保存电影与外部电影网站的编号映射 \\
+tags.csv    & userId, movieId, tag, timestamp & 保存用户为电影添加的文本标签 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+当前系统主推荐链路主要使用 movies.csv 和 ratings.csv，links.csv 可用于后续扩展外部电影信息，
+tags.csv 可用于后续内容特征增强或混合推荐。MovieLens 32M 没有单独的 users.dat 人口统计文件，
+系统会根据 ratings.csv 中出现的不同 userId 自动生成用户表。
+
+\begin{samepage}
+当前已导入数据库的主要数据规模如下：
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+\textbf{数据表} & \textbf{数量} \\
+\midrule
+users   & 200{,}948 \\
+movies  & 87{,}618 \\
+ratings & 32{,}921{,}437 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{samepage}
+
+从规模上看，ratings 表达到 3200 万级，远大于教学中常见的 MovieLens 100K 或 MovieLens 1M 数据集。
+这使得系统不能只依赖内存中的临时数据结构完成所有计算，而需要借助 PostgreSQL 进行持久化存储，并结合
+Redis 缓存减少重复推荐请求带来的计算开销。对于本课程设计而言，这一数据规模也能更好体现数据库索引、
+缓存和服务化推荐接口的必要性。
+
+\subsection{非功能需求}
+
+除基本业务功能外，系统还需要满足一定的工程化要求：
+
+\begin{enumerate}[leftmargin=2em]
+  \item 可部署性：系统应通过 Docker Compose 启动前端、后端、数据库和缓存服务，降低环境配置复杂度。
+  \item 可维护性：项目目录应清晰区分 backend、frontend、trainer、evaluator、spark 和 docs 等模块。
+  \item 可扩展性：推荐服务应保留 ALS、BPR、Hybrid、RecBole 和 Spark ALS 等后续算法与实验扩展入口。
+  \item 可观测性：后端需要提供健康检查、缓存指标、系统指标和评估指标，便于观察系统运行状态。
+  \item 响应性能：在线推荐需要尽量降低响应延迟，并通过索引、缓存或离线预计算方式缓解大规模评分数据带来的性能压力。
+\end{enumerate}
+
+\subsection{开发与运行环境}
+
+为满足上述需求，本系统采用如下技术环境：
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{项目} & \textbf{配置} \\
+\midrule
+后端服务 & FastAPI \\
+前端展示 & Streamlit \\
+数据库 & PostgreSQL \\
+缓存 & Redis \\
+容器编排 & Docker Compose \\
+数据集 & MovieLens 32M / Latest CSV 格式 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\newpage

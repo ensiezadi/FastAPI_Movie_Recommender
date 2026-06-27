@@ -1,0 +1,67 @@
+\section{测试结果与分析}
+
+\subsection{功能测试结果}
+
+以 \texttt{Toy Story (1995)} 为输入电影，系统能够返回基于评分行为的相似电影推荐。
+一次接口结果示例如下：
+
+\begin{center}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{llrr}
+\toprule
+\textbf{推荐电影} & \textbf{类型} & \textbf{Score} & \textbf{推荐原因} \\
+\midrule
+Matrix, The (1999)               & Action$|$Sci-Fi$|$Thriller                         & 0.3412 & rating cosine: 124 sampled shared users \\
+Shawshank Redemption, The (1994) & Drama                                              & 0.3401 & rating cosine: 122 sampled shared users \\
+Star Wars: Episode IV (1977)     & Action$|$Adventure$|$Fantasy$|$Sci-Fi               & 0.3380 & rating cosine: 124 sampled shared users \\
+Star Wars: Episode V (1980)      & Action$|$Adventure$|$Drama$|$Sci-Fi$|$War          & 0.3369 & rating cosine: 123 sampled shared users \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{center}
+
+结果说明系统已经能够达到核心功能：根据输入电影返回相似电影，并且具备可解释推荐结果。
+
+\subsection{抽样评估结果}
+
+当前一次抽样设置：
+
+\begin{verbatim}
+sample_size = 10
+k = 10
+model = movie-cosine
+\end{verbatim}
+
+实验结果如下：
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+\textbf{指标} & \textbf{数值} \\
+\midrule
+Precision@10 & 0.0100 \\
+Recall@10    & 0.1000 \\
+NDCG@10      & 0.0500 \\
+HitRate@10   & 0.1000 \\
+Avg Latency  & 1869.201 ms \\
+p95 Latency  & 9912.077 ms \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{结果分析}
+
+从推荐效果看，当前抽样 HitRate@10 为 0.1，说明在 10 个抽样用户中有 1 个用户的隐藏目标电影
+被 Top-10 推荐命中。该指标不高，主要原因包括：
+
+\begin{enumerate}[leftmargin=2em]
+  \item 当前方法是在线抽样版电影相似度计算，不是完整离线相似矩阵。
+  \item 抽样 leave-one-out 只保留一个目标电影，评价较严格。
+  \item MovieLens 32M 电影数量达到 87{,}618，候选空间较大。
+  \item 未训练 ALS/BPR 等矩阵分解模型，个性化能力有限。
+\end{enumerate}
+
+从系统性能看，平均延迟约 1.87 秒，p95 延迟接近 9.91 秒，说明当前在线按需计算在大规模数据上
+存在明显性能瓶颈。这一结果也证明系统需要 Redis 缓存、离线预计算和模型服务化。
+
+\newpage
